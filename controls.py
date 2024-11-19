@@ -6,6 +6,7 @@ SELECT_devID = 16 # fixed for the SuperK SELECT
 
 # TODO: make classes for the COMPACT and SELECT devices
 # TODO: don't print regresult status each time
+# TODO: make a document to list all of these functions
 
 # Scan all ports and print out the devices connected to each port
 def scan_ports():
@@ -64,17 +65,17 @@ def reset_interlock():
         print('Interlock off (interlock circuit open).')
 
 
-mode_mapping = {
+def trig_mode(mode=None):
+    """Get the current operating mode (pulse trigger source). Optional input to set the trigger mode."""
+    mode_mapping = {
     0: 'Internal frequency generator',
     1: 'External trig',
     2: 'Software trigged burst',
     3: 'Hardware trigged burst',
     4: 'External gate on',
     5: 'External gate off',
-}
+    }
 
-def trig_mode(mode=None):
-    """Get the current operating mode (pulse trigger source). Optional input to set the trigger mode (see mapping above)."""
     if mode is None:
         result = registerReadU32(COMport, COMPACT_devID, 0x31, -1)
         status = mode_mapping[result[1]]
@@ -137,33 +138,53 @@ def display_backlight(brightness=None):
     else:
         result = registerWriteReadU32(COMport, COMPACT_devID, 0x26, brightness, -1)
         backlight_level = result[1]
-        print(f'Display backlight level set to {backlight_level}%.')       
+        print(f'Display backlight level set to {backlight_level}%.')
+
+
+def display_readout():
+    """Readout of the text currently shown in the display."""
+    result = registerRead(COMport, COMPACT_devID, 0x78, -1)
+    print(result[1])
+
+
+def heat_sink_temp():
+    """Heat sink temperature readout in C."""
+    result = registerReadS16(COMport, COMPACT_devID, 0x1B, -1)
+    temp = result[1] / 10
+    print(f"Heat sink temperature: {temp} C.")
+
+
+def supply_voltage():
+    """Readout the internal supply voltage in mV."""
+    result = registerReadU16(COMport, COMPACT_devID, 0x1A, -1)
+    voltage = result[1] # voltage given in mV
+    print('Internal supply voltage:', voltage, 'mV.')
 
 
 # Now functions for the SuperK SELECT
 
-def lambda_min1():
+def wavelength_min1():
     """Crystal 1 (VIS/NIR) minimum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0x90, -1)
-    wavelength = result[1]/1000
+    wavelength = result[1]/1000 # convert pm to nm
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
 
 
-def lambda_max1():
+def wavelength_max1():
     """Crystal 1 (VIS/NIR) maximum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0x91, -1)
     wavelength = result[1]/1000
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
 
 
-def lambda_min2():
+def wavelength_min2():
     """Crystal 2 (NIR/IR) minimum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0xA0, -1)
     wavelength = result[1]/1000
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
 
 
-def lambda_max2():
+def wavelength_max2():
     """Crystal 2 (NIR/IR) maximum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0xA1, -1)
     wavelength = result[1]/1000
