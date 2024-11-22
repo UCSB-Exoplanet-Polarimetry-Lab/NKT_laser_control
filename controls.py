@@ -10,6 +10,7 @@ from NKTP_DLL import *
 # TODO: find a way to turn on/off power to the RF channels separately
 # TODO: add error handling if register result type is not good
 # TODO: add return values for relevent functions
+# TODO: make function to get_status to give all info at once
 
 
 def scan_ports():
