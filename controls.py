@@ -1,17 +1,7 @@
 from NKTP_DLL import *
 
-# COMport = 'COM3' # depends on the port the device is connected to. COM3 for Rayleigh desktop
-# COMPACT_devID = 1 # fixed for the SuperK COMPACT
-# SELECT_devID = 16 # fixed for the SuperK SELECT
-# RFdriver_devID = 17 # fixed for the SuperK RF driver
-
-# TODO: don't print regresult status each time
-# TODO: make a document to list all of these functions
-# TODO: find a way to turn on/off power to the RF channels separately
 # TODO: add error handling if register result type is not good
 # TODO: add return values for relevent functions
-# TODO: make function to get_status to give all info at once
-
 
 def scan_ports():
     """Scan all ports and print out the devices connected to each port."""
@@ -97,7 +87,7 @@ class compact:
 
     def emission_on(self):
         """Turn on the laser emission."""
-        result = registerWriteU8(self.COMport, self.COMPACT_devID, 0x30, 1, -1) # devID=1 for Compact
+        result = registerWriteU8(self.COMport, self.COMPACT_devID, 0x30, 1, -1)
         print('Setting emission ON.')
 
 
@@ -105,6 +95,18 @@ class compact:
         """Turn off the laser emission."""
         result = registerWriteU8(self.COMport, self.COMPACT_devID, 0x30, 0, -1)
         print('Setting emission OFF.')
+
+
+    def get_emission(self):
+        """Get the current emission status."""
+        result = registerReadU8(self.COMport, self.COMPACT_devID, 0x30, -1)
+        status = result[1]
+        if status == 0:
+            print('Emission is OFF.')
+            return 0
+        elif status == 1:
+            print('Emission is ON.')
+            return 1
 
 
     def overall_power(self, power=None):
@@ -199,7 +201,39 @@ class select:
         print(f'Crystal 2 (NIR/IR) wavelength range: {int(min)} nm to {int(max)} nm.')
 
 
-# Functions for the RF driver (external) in charge of controlling the SELECT wavelengths
+    # def power_monitor(self):    # CHECK
+    #     """Readout from optional optical power monitors. Result as a percent."""
+    #     result1 = registerReadU16(self.COMport, self.SELECT_devID, 0x10, -1)
+    #     power1 = result1[1]/10
+
+    #     result2 = registerReadU16(self.COMport, self.SELECT_devID, 0x11, -1)
+    #     power2 = result2[1]/10
+
+    #     print(f'Power monitor 1 readout: {power1} %, power monitor 2 readout: {power2} %.')
+
+
+    # def monitor_switch(self, crystal=None):  # CHECK
+        # """Select which power detector should be connected to the output connector. Optional input 1 or 2 to switch to the corresponding crystal."""
+        # if crystal==None:
+        #     result = registerReadU8(self.COMport, self.SELECT_devID, 0x35, -1)
+        #     result = result[1]
+        #     if result == 0:
+        #         print('Optical power monitor connected to crystal 1.')
+        #     elif result == 1:
+        #         print('Optical power monitor connected to crystal 2.')
+
+        # elif crystal == 1:
+        #     result = registerWriteReadU8(self.COMport, self.SELECT_devID, 0x35, 0, -1)
+        #     print('Optical power monitor connected to crystal 1.')
+        # elif crystal == 2:
+        #     result = registerWriteReadU8(self.COMport, self.SELECT_devID, 0x35, 1, -1)
+        #     print('Optical power monitor connected to crystal 2.')
+
+        # else:
+        #     print('Invalid input. Choose 1 or 2.')
+
+
+# Functions for the (external) RF driver in charge of controlling the SELECT wavelengths
 class driver:
     def __init__(self, COMport='COM3', RFdriver_devID=17):
         self.COMport = COMport
@@ -219,9 +253,9 @@ class driver:
         result = registerReadU8(self.COMport, self.RFdriver_devID, 0x30, -1)
         power = result[1]
         if power==0:
-            print('RF power is off.')
+            print('RF power is OFF.')
         elif power==1:
-            print('RF power is on.')
+            print('RF power is ON.')
 
 
     def RF_power_off(self):
@@ -230,9 +264,20 @@ class driver:
         result = registerReadU8(self.COMport, self.RFdriver_devID, 0x30, -1)
         power = result[1]
         if power==0:
-            print('RF power is off.')
+            print('RF power is OFF.')
         elif power==1:
-            print('RF power is on.')
+            print('RF power is ON.')
+
+    def get_RF_power(self):
+        """Get the current RF power status."""
+        result = registerReadU8(self.COMport, self.RFdriver_devID, 0x30, -1)
+        power = result[1]
+        if power==0:
+            print('RF power is OFF.')
+            return 0
+        elif power==1:
+            print('RF power is ON.')
+            return 1
 
 
     def read_connected_crystal(self):
@@ -252,13 +297,12 @@ class driver:
 
     def set_channel(self, channel, wavelength, amplitude):          # WORKS
         """Specify the channel (1-8), then set the wavelength in nm and amplitude as a percent for that channel."""
-        wavelength_channel_ID = int(channel-1)
-        wavelength_address = f"0x9{wavelength_channel_ID}"
+        channel_ID = int(channel-1)
+        wavelength_address = f"0x9{channel_ID}"
         wavelength_address = int(wavelength_address, 16)
         wavelength_pm = int(wavelength*1000) # convert nm to pm as the input format
 
-        amplitude_channel_ID = int(channel-1)
-        amplitude_address = f"0xB{amplitude_channel_ID}"
+        amplitude_address = f"0xB{channel_ID}"
         amplitude_address = int(amplitude_address, 16)
         amplitude_percent = int(amplitude*10) # convert to tenths of a percent as the imput format
 
@@ -267,3 +311,43 @@ class driver:
 
         print(f'Channel {channel} wavelength set to:', result1[1]/1000, 'nm, amplitude set to:', result2[1]/10, '%.')
 
+    
+    def get_channels(self):
+        """Read the current channels and print which ones are on and at what settings."""
+        off_channels = []
+        for channel in range(0, 8):
+            wavelength_address = f"0x9{channel}"
+            wavelength_address = int(wavelength_address, 16)
+
+            amplitude_address = f"0xB{channel}"
+            amplitude_address = int(amplitude_address, 16)
+
+            result1 = registerReadU32(self.COMport, self.RFdriver_devID, wavelength_address, 0)
+            result2 = registerReadU16(self.COMport, self.RFdriver_devID, amplitude_address, -1)
+
+            if result2[1] != 0:
+                print(f'Channel {channel+1} is ON, wavelength: {result1[1]/1000} nm, amplitude: {result2[1]/10} %.')
+            else:
+                # print(f'Channel {channel} is OFF.')
+                off_channels.append(channel+1)
+        print(f'Channels {off_channels} are OFF')
+
+
+def get_status(compact, driver):
+    """Get the overall status, all relevant information."""
+    compact.get_interlock()
+    compact.trig_mode()
+
+    emission_status = compact.get_emission()
+    if emission_status == 1:
+        compact.overall_power()
+        # compact.pulse_frequency()
+    elif emission_status == 0:
+        pass
+
+    RF_status = driver.get_RF_power()
+    if RF_status == 1:
+        # driver.read_connected_crystal()
+        driver.get_channels()
+    elif RF_status == 0:
+        pass
