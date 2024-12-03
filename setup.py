@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='your_package_name',  # Replace with your package name
+    name='nkt_controls',  # Replace with your package name
     version='0.1.0',  # Replace with your package version
     author='William Melby',  # Replace with your name
     author_email='wcmelby@ucsb.edu',  # Replace with your email
