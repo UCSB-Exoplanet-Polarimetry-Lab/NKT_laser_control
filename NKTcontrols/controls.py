@@ -1,4 +1,4 @@
-from NKTP_DLL import *
+from .NKTP_DLL import *
 
 # TODO: add error handling if register result type is not good
 # TODO: add return values for relevent functions
