@@ -2,6 +2,7 @@ from .NKTP_DLL import *
 
 # TODO: add error handling if register result type is not good
 # TODO: add return values for relevent functions
+# TODO: update get_status function to show if the laser is off
 
 def scan_ports():
     """Scan all ports and print out the devices connected to each port."""
