@@ -6,15 +6,18 @@ setup(
     author='William Melby',  # Replace with your name
     author_email='wcmelby@ucsb.edu',  # Replace with your email
     description='Python controls for NKT Photonics components.',
-    packages=find_packages(include=['NKTcontrols', 'NKTcontrols.*']),
+    long_description=open('README.md').read(),  # Use your README for a detailed description
+    long_description_content_type='text/markdown',  # Use 'text/x-rst' for reStructuredText
+    packages=find_packages(where='.', include=['NKTcontrols*']),  # Automatically include submodules
     # install_requires=[
-    #     # List your package dependencies here
-    #     # 'some_package>=1.0.0',
+    #     # 'numpy>=1.18.0',  # Example dependency
+    #     # 'matplotlib>=3.3.0',
     # ],
     # classifiers=[
     #     'Programming Language :: Python :: 3',
-    #     'License :: OSI Approved :: MIT License',
+    #     'License :: OSI Approved :: MIT License',  # or your actual license
     #     'Operating System :: OS Independent',
     # ],
-    python_requires='>=3.6',  # Specify the Python version requirement
+    # python_requires='>=3.6',  # Specify the Python version requirement
+    # license='MIT',  # or your actual license
 )
